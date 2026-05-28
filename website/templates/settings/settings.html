@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block page_title %}Настройки{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/settings/settings.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/settings/modal.css') }}">
+{% endblock %}
+
+{% block content %}
+
+    <div class="settings-grid">
+
+        <div class="card">
+            <div class="card-header">
+                <h2>смена пароля</h2>
+            </div>
+            <form id="passwordForm">
+                <input type="password" placeholder="Старый пароль" required>
+                <input type="password" placeholder="Новый пароль" required>
+                <button type="submit" class="btn-primary btn-right">изменить</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>телеграм бот</h2>
+                <button class="add-btn" onclick="openModal('botModal')">+</button>
+            </div>
+            <div class="table-wrapper">
+                <table class="styled-table">
+                    <thead>
+                    <tr>
+                        <th>название</th>
+                        <th>ссылка</th>
+                        <th>статус</th>
+                        <th>дата добавления</th>
+                        <th>дата обновления</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody id="telegramBotsBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>телеграм чаты</h2>
+                <button class="add-btn" onclick="openModal('chatModal')">+</button>
+            </div>
+            <div class="table-wrapper">
+                <table class="styled-table">
+                    <thead>
+                    <tr>
+                        <th>название</th>
+                        <th>ссылка</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td>основной чат</td>
+                        <td><a href="#" class="link">https://t.me/example_chat</a></td>
+                        <td>
+                            <button class="btn-delete">удалить</button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>scrape-аккаунты</h2>
+                <button class="add-btn" onclick="openModal('scrapeModal')">+</button>
+            </div>
+            <div class="table-wrapper">
+                <table class="styled-table">
+                    <thead>
+                    <tr>
+                        <th>сессия</th>
+                        <th>тип</th>
+                        <th>статус</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody id="scrapeTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>Прокси</h2>
+                <div class="header-actions">
+                    <button class="btn-excel" onclick="downloadProxiesExcel()">
+                        <span>↓</span> Скачать Excel
+                    </button>
+                    <button class="btn-excel" onclick="uploadProxiesExcel()">
+                        <span>↑</span> Загрузить Excel
+                    </button>
+                    <button class="add-btn" onclick="openModal('proxyModal')">+</button>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table class="styled-table">
+                    <thead>
+                    <tr>
+                        <th>Хост:Порт</th>
+                        <th>Тип</th>
+                        <th>Логин</th>
+                        <th>Статус</th>
+                        <th>дата добавления</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody id="proxyTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="botModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal('botModal')">✕</span>
+            <h2>добавить телеграм бота</h2>
+            <form>
+                <input type="text" placeholder="Введите токен бота" required>
+                <button type="submit" class="btn-primary">добавить бота</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="chatModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal('chatModal')">✕</span>
+            <h2>добавить чат</h2>
+            <form>
+                <input type="text" required placeholder="Название чата">
+                <input type="text" required placeholder="ссылка на чат">
+                <button type="submit" class="btn-primary">добавить</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="scrapeModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal('scrapeModal')">✕</span>
+            <h2 id="modalTitle">Добавить аккаунт</h2>
+
+            <select id="platformSelect" onchange="toggleFields()">
+                <option value="">Выберите платформу</option>
+                <option value="vk">VK</option>
+                <option value="youtube">YouTube</option>
+                <option value="telegram">Telegram</option>
+            </select>
+
+            <div id="vkFields" class="platform-fields">
+                <div id="vkInputFields">
+                    <input type="text" id="vkClientId" placeholder="Client ID" required>
+                    <input type="text" id="vkApiKey" placeholder="API Key" required>
+                </div>
+                <img id="vkQrImage" style="width: 100%; max-width: 420px; display: none; margin: 20px auto 10px auto; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.4);">
+                <p id="vkStatusText" style="margin-top: 10px; font-size: 15px; color: #ccc; text-align: center; display: none;"></p>
+            </div>
+
+            <div id="youtubeFields" class="platform-fields">
+                <input type="text" id="youtubeApiKey" placeholder="API Key" required>
+            </div>
+
+            <div id="telegramFields" class="platform-fields">
+                <input type="text" id="tgPhone" placeholder="Номер телефона (+79...)" required>
+                <input type="text" id="tgApiId" placeholder="API ID" required>
+                <input type="text" id="tgApiHash" placeholder="API Hash" required>
+
+                <div id="tgCodeBlock" style="display: none; margin-top: 15px;">
+                    <input type="text" id="tgCode" placeholder="Код подтверждения из Telegram" maxlength="5">
+                </div>
+
+                <div id="tgPasswordBlock" style="display:none;">
+                    <input type="password" id="tgPassword" placeholder="Пароль Telegram">
+                </div>
+            </div>
+
+            <button type="button" id="submitBtn" class="btn-primary">Добавить аккаунт</button>
+        </div>
+    </div>
+
+    <div id="proxyModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal('proxyModal')">✕</span>
+            <h2>Добавить прокси</h2>
+            <input type="text" id="proxyAddress" placeholder="IP:Port (например: 123.45.67.89:8080)" required>
+            <input type="text" id="proxyLogin" placeholder="Логин" required>
+            <input type="password" id="proxyPassword" placeholder="Пароль" required>
+            <button type="button" class="btn-primary" onclick="addProxy()">Добавить прокси</button>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+
+    {{ super() }}
+
+    <script src="{{ url_for('static', path='js/settings/modal.js') }}"></script>
+    <script src="{{ url_for('static', path='js/settings/delete_proxy.js') }}"></script>
+    <script src="{{ url_for('static', path='js/settings/delete_telegram_bot.js') }}"></script>
+    <script src="{{ url_for('static', path='js/settings/delete_scrape_account.js') }}"></script>
+    <script src="{{ url_for('static', path='js/settings/add_scrape_account.js') }}"></script>
+    <script src="{{ url_for('static', path='js/settings/list_scrape_accounts.js') }}"></script>
+    <script src="{{ url_for('static', path='js/settings/add_telegram_bot.js') }}"></script>
+    <script src="{{ url_for('static', path='js/settings/list_telegram_bots.js') }}"></script>
+    <script src="{{ url_for('static', path='js/settings/add_proxies.js') }}"></script>
+    <script src="{{ url_for('static', path='js/settings/list_proxies.js') }}"></script>
+
+{% endblock %}

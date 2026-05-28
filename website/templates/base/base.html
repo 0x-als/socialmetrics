@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title if title else "Dashboard" }}</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', path='css/base/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/components/buttons.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/components/toast.css') }}">
+    <script src="{{ url_for('static', path='js/components/notifications.js') }}"></script>
+    <script src="{{ url_for('static', path='js/logout/logout.js') }}"></script>
+
+
+    {% block head %}{% endblock %}
+</head>
+<body>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar">
+        <button class="close-btn" id="closeBtn">✕</button>
+        <div class="sidebar-header">
+            <div class="logo">SOCIAL<span>METRICS</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard" class="nav-item active"><span>🏠</span><span class="nav-text">Главная</span></a>
+            <a href="/social_network" class="nav-item"><span>👤</span><span class="nav-text">Соц. Сети</span></a>
+            <a href="/settings" class="nav-item"><span>⚙️</span><span class="nav-text">Настройки</span></a>
+            <a href="/logout" class="nav-item"><span>⚙️</span><span class="nav-text">Выход</span></a>
+        </nav>
+    </aside>
+
+    <div class="overlay" id="overlay"></div>
+
+    <header class="topbar">
+        <button class="menu-btn" id="menuBtn">☰</button>
+        <div class="topbar-title">
+            {% block page_title %}{% endblock %}
+        </div>
+        <div class="topbar-user">
+            {{ request.state.user.login if request.state.user else "" }}
+        </div>
+    </header>
+
+    <main class="content">
+        {% block content %}{% endblock %}
+    </main>
+</div>
+
+<script>
+    const menuBtn = document.getElementById("menuBtn");
+    const closeBtn = document.getElementById("closeBtn");
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("overlay");
+
+    function openSidebar() {
+        sidebar.classList.add("open");
+        overlay.classList.add("active");
+    }
+
+    function closeSidebar() {
+        sidebar.classList.remove("open");
+        overlay.classList.remove("active");
+    }
+
+    menuBtn.addEventListener("click", openSidebar);
+    closeBtn.addEventListener("click", closeSidebar);
+    overlay.addEventListener("click", closeSidebar);
+</script>
+
+{% block scripts %}
+
+{% endblock %}
+
+</body>
+</html>

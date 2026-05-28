@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block page_title %}Социальные сети{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/social_network/social_network.css') }}">
+{% endblock %}
+
+{% block content %}
+
+    <div class="card">
+        <div class="card-header">
+            <select id="userFilter" class="filter-select" onchange="loadSocialNetworks(this.value)">
+                <option value="">Все пользователи</option>
+            </select>
+
+            <div class="column-toggles">
+                <label><input type="checkbox" checked onchange="toggleColumn(0)"> Username</label>
+                <label><input type="checkbox" checked onchange="toggleColumn(1)"> URL</label>
+                <label><input type="checkbox" checked onchange="toggleColumn(2)"> Тип</label>
+                <label><input type="checkbox" checked onchange="toggleColumn(3)"> Статус</label>
+            </div>
+
+            <button class="add-btn" onclick="openModal('addNetworkModal')">+</button>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="styled-table" id="networksTable">
+                <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>URL</th>
+                    <th>Тип</th>
+                    <th>Статус</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody id="networksBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="addNetworkModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal('addNetworkModal')">✕</span>
+            <h2>Добавить социальную сеть</h2>
+
+            <input type="text" id="username" placeholder="Username" required>
+            <input type="text" id="url" placeholder="https://..." required>
+
+            <select id="networkType">
+                <option value="telegram">Telegram</option>
+                <option value="vk">VK</option>
+                <option value="youtube">YouTube</option>
+                <option value="tiktok">TikTok</option>
+                <option value="instagram">Instagram</option>
+            </select>
+
+            <button type="button" class="btn-primary" onclick="addSocialNetwork()">Добавить</button>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', path='js/social_network/list_social_network.js') }}"></script>
+    <script src="{{ url_for('static', path='js/social_network/modal.js') }}"></script>
+    <script src="{{ url_for('static', path='js/users/list_users.js') }}"></script>
+    <script src="{{ url_for('static', path='js/social_network/add_social_network.js') }}"></script>
+    <script src="{{ url_for('static', path='js/social_network/delete_social_network.js') }}"></script>
+    <script src="{{ url_for('static', path='js/components/notifications.js') }}"></script>
+{% endblock %}

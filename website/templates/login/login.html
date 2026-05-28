@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Авторизация</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/login/login.css') }}">
+    <script src="{{ url_for('static', path='js/login/authorization.js') }}"></script>
+</head>
+<body>
+
+<div class="login-wrapper">
+    <div class="login-card">
+        <h1 class="title">SocialMetrics</h1>
+        <p class="subtitle">Вход в панель мониторинга</p>
+
+        <form class="login-form" id="loginForm">
+            <input id="login" type="text" class="input" placeholder="Логин" autocomplete="username">
+            <input id="password" type="password" class="input" placeholder="Пароль" autocomplete="current-password">
+            <button class="btn">Войти</button>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

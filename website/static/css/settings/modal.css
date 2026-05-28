@@ -1,0 +1,104 @@
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+    background: #12151b;
+    padding: 32px 40px;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 520px;
+    min-width: 340px;
+    border: 1px solid #4cc9f0;
+    position: relative;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+    animation: modalPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-content h2 {
+    text-align: center;
+    margin-bottom: 28px;
+    color: #e6e6e6;
+    font-size: 20px;
+}
+
+/* Поля ввода */
+.modal-content input {
+    text-align: center;
+    width: 100%;
+    padding: 14px;
+    background: #1a1d23;
+    border: 1px solid #23262d;
+    border-radius: 8px;
+    color: #e6e6e6;
+    margin-bottom: 14px;
+    font-size: 16px;
+}
+
+.modal-content select {
+    text-align: center;
+    width: 60%;
+    max-width: 320px;
+    margin: 0 auto 20px auto;
+    display: block;
+    padding: 14px;
+    background: #1a1d23;
+    border: 1px solid #23262d;
+    color: #e6e6e6;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.modal-content button {
+    margin: 20px auto 0 auto;
+    width: auto;
+    min-width: 220px;
+    padding: 12px 32px;
+    display: block;
+    font-size: 15px;
+}
+
+.modal-close {
+    position: absolute;
+    top: 20px;
+    right: 24px;
+    font-size: 28px;
+    cursor: pointer;
+    color: #8a94a6;
+    transition: color 0.2s ease;
+}
+
+.modal-close:hover {
+    color: #ff5e5e;
+}
+
+/* Анимации */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes modalPop {
+    from {
+        opacity: 0;
+        transform: scale(0.75) translateY(50px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}

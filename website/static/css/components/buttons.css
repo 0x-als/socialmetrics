@@ -1,0 +1,128 @@
+.add-btn {
+    background: linear-gradient(90deg, #7b5eff, #4cc9f0);
+    border: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    color: white;
+    font-size: 26px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 12px rgba(123, 94, 255, 0.3);
+}
+
+.add-btn:hover {
+    transform: scale(1.08) rotate(90deg);
+    box-shadow: 0 8px 20px rgba(123, 94, 255, 0.45);
+    background: linear-gradient(90deg, #ff9500, #ff5e00);
+}
+
+.btn-primary {
+    background: linear-gradient(90deg, #7b5eff, #4cc9f0);
+    border: none;
+    padding: 11px 24px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 12px rgba(123, 94, 255, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(123, 94, 255, 0.4);
+    background: linear-gradient(90deg, #8a6eff, #5ed9ff);
+}
+
+.btn-delete {
+    background: linear-gradient(90deg, #ff3b5c, #e11d48);
+    border: none;
+    padding: 7px 16px;
+    border-radius: 8px;
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 12px rgba(255, 59, 92, 0.35);
+}
+
+.btn-delete:hover {
+    background: linear-gradient(90deg, #ff5e5e, #f43f5e);
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 8px 20px rgba(255, 59, 92, 0.45);
+}
+
+.btn-delete:active {
+    transform: translateY(0) scale(0.96);
+}
+
+.btn-link,
+.link {
+    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    color: white;
+    border: none;
+    padding: 7px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+    white-space: nowrap;
+}
+
+.btn-link:hover,
+.link:hover {
+    background: linear-gradient(90deg, #2563eb, #3b82f6);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.45);
+}
+
+.btn-link:active,
+.link:active {
+    transform: translateY(0) scale(0.96);
+}
+
+
+.btn-excel {
+    background: linear-gradient(90deg, #22c55e, #4ade80);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-excel:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(34, 197, 94, 0.4);
+    background: linear-gradient(90deg, #4ade80, #86efac);
+}
+
+.btn-excel:active {
+    transform: translateY(0) scale(0.96);
+}
+
+.btn-excel span {
+    font-size: 16px;
+    line-height: 1;
+}
