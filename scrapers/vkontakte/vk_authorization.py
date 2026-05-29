@@ -1,8 +1,13 @@
-import json
 import os
+import json
 import base64
+import aiohttp
+
 from config import base_dir
 from playwright.async_api import async_playwright
+
+from database import init_database
+from utils import security
 from utils.logger import logger_config
 
 
@@ -131,3 +136,162 @@ class AuthorizationVkontakte:
         except Exception as ex:
             logger.exception(ex)
             return None
+
+
+class GetTokenVkontakte:
+
+    """
+    Before parsing starts, it will go through all the sessions and update the tokens.
+    """
+
+    def __init__(self):
+        self.log_file = "GetTokenVkontakte.log"
+        self.sessions = None
+
+    async def get_token(self, id, client_id, api_key, path):
+        logger = logger_config(name="get_token", log_file=self.log_file)
+
+        try:
+
+            async with async_playwright() as playwright:
+                browser = await playwright.chromium.launch(
+                    headless=False,
+                )
+                with open(f"{base_dir}/files/vk_profiles/{path}/cookies.json", "r", encoding="UTF-8") as f:
+                    cookies = json.load(f)
+
+                with open(f"{base_dir}/files/vk_profiles/{path}/storage.json", "r", encoding="UTF-8") as f:
+                    storage = json.load(f)
+
+                context = await browser.new_context(storage_state=storage)
+                await context.add_cookies(cookies)
+
+                page = await context.new_page()
+
+                await page.goto("https://vk.com", wait_until="domcontentloaded")
+                await page.wait_for_timeout(5000)
+
+                try:
+                    await page.locator("text=Профиль").wait_for(timeout=25000)
+                    logger.info(f"VK profile: {id} - logged in")
+                except Exception as ex:
+                    logger.warning(f"VK profile: {id} - not logged in\n{ex}")
+
+                oauth_rul = (
+                    f"https://oauth.vk.com/authorize?"
+                    f"client_id={client_id}&"
+                    f"display=page&"
+                    f"redirect_uri=https://oauth.vk.com/blank.html&"
+                    f"scope=video,wall,groups&"
+                    f"response_type=token&"
+                    f"v=5.199"
+                )
+
+                logger.info(f"Redirecting to: {oauth_rul[:120]}")
+
+                await page.goto(oauth_rul)
+                logger.info("Waiting button: Разрешить")
+
+                try:
+                    warning = page.locator("text=Пожалуйста, не копируйте данные из адресной строки для сторонних сайтов. Таким образом Вы можете потерять доступ к Вашему аккаунту.")
+
+                    if await warning.count() > 0:
+                        logger.info("Detected warning - not clicked button: 'Разрешить'")
+                    else:
+                        await page.locator("button:has-text('Разрешить')").wait_for(timeout=25000)
+                        await page.locator("button:has-text('Разрешить')").click()
+                        logger.info(f"Button 'Разрешить' clicked")
+
+                except Exception as ex:
+                    logger.exception(ex)
+
+                try:
+
+                    await page.wait_for_url("https://oauth.vk.com/blank.html*", timeout=90000)
+                    logger.info("Redirecting to: 'https://oauth.vk.com/blank.html' completed")
+
+                except Exception as ex:
+                    logger.exception(ex)
+
+                try:
+
+                    hash_value = await page.evaluate("window.location.hash")
+                    logger.debug(f"GET hash: {hash_value[:80]}{'...' if len(hash_value) > 80 else ''}")
+
+                    if "access_token" in hash_value:
+                        logger.info("Found access token in URL")
+                        parts = hash_value.lstrip("#").split("&")
+                        token_dict = dict(p.split("=") for p in parts if "=" in p)
+                        token = token_dict.get("access_token")
+                        if token:
+                            token_hash = await security.encrypt(token)
+                            if token_hash:
+                                await page.goto("https://vk.com/feed")
+                                await page.locator("text=Профиль").wait_for(timeout=25000)
+                                logger.info(f"VK profile: {id} - logged in")
+
+                                if await init_database.vkontakte_repo.update_token_hash(id, token_hash):
+                                    logger.info("Saved access token")
+                                else:
+                                    logger.error("Failed to get access token")
+                            else:
+                                logger.error(f"Failed request for access token")
+
+                    if "code=" in hash_value:
+                        logger.info("found code in URL -> request token")
+                        code = hash_value.replace("#code", "").split("&")[0]
+
+                        token_url = (
+                            f"https://oauth.vk.com/access_token?"
+                            f"client_id={client_id}"
+                            f"client_secret={api_key}&"
+                            f"redirect_uri=https://oauth.vk.com/blank.html&"
+                            f"code={code}"
+                        )
+
+                        async with aiohttp.ClientSession() as http:
+                            async with http.get(token_url, ssl=False) as response:
+                                if response.status == 200:
+                                    data = await response.json()
+                                    token = data["access_token"]
+
+                                    if token:
+                                        token_hash = await security.encrypt(token)
+                                        if token_hash:
+                                            logger.info("Found access token in URL")
+                                            await page.goto("https://vk.com/feed")
+                                            await page.locator("text=Профиль").wait_for(timeout=25000)
+                                            logger.info(f"VK profile: {id} - logged in")
+
+                                            if await init_database.vkontakte_repo.update_token_hash(id, token_hash):
+                                                logger.info("Saved access token")
+                                    else:
+                                        logger.error("Failed to get access token")
+                                else:
+                                    logger.error(f"Failed request for access token: {response.status}")
+
+                except Exception as ex:
+                    logger.exception(ex)
+
+        except Exception as ex:
+            logger.exception(ex)
+        finally:
+            await browser.close()
+
+    async def run(self):
+        logger = logger_config(name="run", log_file=self.log_file)
+
+        try:
+
+            self.sessions = await init_database.vkontakte_repo.get_sessions()
+
+            for session in self.sessions:
+                id = session.id
+                client_id = await security.decrypt(session.client_id)
+                api_key = await security.decrypt(session.api_key)
+                path = session.path
+
+                await self.get_token(id, client_id, api_key, path)
+
+        except Exception as ex:
+            logger.exception(ex)
