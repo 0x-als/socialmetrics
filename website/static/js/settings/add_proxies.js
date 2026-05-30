@@ -32,7 +32,7 @@ window.uploadProxiesExcel = async function () {
         const data = await res.json();
 
         if (data.status) {
-            showSuccess(`Успешно добавлено ${data.added}`);
+            showSuccess(`Успешно добавлено прокси ${data.added}`);
             if (typeof loadProxies === "function") loadProxies();
         } else {
             showError(data.message);

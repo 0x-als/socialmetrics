@@ -402,6 +402,30 @@ class TelegramBotRepo:
             return False
 
 
+class InstagramRepo:
+    def __init__(self):
+        self.log_file = "InstagramRepo.log"
+
+    async def get_instagram_accounts(self):
+        logger = logger_config(name="get_instagram_accounts", log_file=self.log_file)
+
+        try:
+
+            async with get_session() as session:
+                try:
+
+                    query = select(SocialNetworks).where(SocialNetworks.type == "instagram")
+                    result = await session.execute(query)
+                    return result.scalars().all()
+
+                except Exception as ex:
+                    logger.exception(ex)
+                    return False
+
+        except Exception as ex:
+            logger.exception(ex)
+
+
 class ScrapeAccountsRepo:
     def __init__(self):
         self.log_file = "ScrapeAccountsRepo.log"
@@ -555,6 +579,25 @@ class ProxiesRepo:
         except Exception as ex:
             logger.exception(ex)
             return False
+
+    async def get_proxies_true(self):
+        logger = logger_config(name="get_proxies_true", log_file=self.log_file)
+
+        try:
+
+            async with get_session() as session:
+                try:
+
+                    query = select(Proxies).where(Proxies.status == True)
+                    result = await session.execute(query)
+                    return result.scalars().all()
+
+                except Exception as ex:
+                    logger.exception(ex)
+                    return False
+
+        except Exception as ex:
+            logger.exception(ex)
 
     async def create_proxies(self, proxies_data: list):
         logger = logger_config(name="create_proxies", log_file=self.log_file)

@@ -14,6 +14,7 @@ class INITDatabase:
         self.social_networks_repo = SocialNetworksRepo()
         self.telegram_repo = TelegramRepo()
         self.proxies_repo = ProxiesRepo()
+        self.instagram_repo = InstagramRepo()
 
 
 init_database = INITDatabase()
