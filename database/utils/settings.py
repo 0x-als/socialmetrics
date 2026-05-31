@@ -6,7 +6,6 @@ from utils.logger import logger_config
 from database.session import get_session
 from sqlalchemy.ext.asyncio import create_async_engine
 
-
 class SettingsRepo:
     def __init__(self):
         self.log_file = "SettingsRepo.log"

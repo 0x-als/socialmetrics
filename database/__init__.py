@@ -1,5 +1,14 @@
-from database.utils import *
-from website.database.utils import *
+from database.utils.scrape_accounts import *
+from database.utils.session import *
+from database.utils.users import *
+from database.utils.vkontakte import *
+from database.utils.telegram import *
+from database.utils.telegram_bot import *
+from database.utils.proxies import *
+from database.utils.instagram import *
+from database.utils.youtube import *
+from database.utils.social_network import *
+from database.utils.settings import *
 
 
 class INITDatabase:

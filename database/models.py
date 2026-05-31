@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy import (
-    TIMESTAMP, BigInteger, Boolean, Text, func, Integer, ForeignKey, DateTime
+    TIMESTAMP, BigInteger, Boolean, Text, UniqueConstraint, func, Integer, ForeignKey, DateTime
 )
 
 
@@ -81,6 +81,9 @@ class NetworkItems(BaseModel):
     _metadata: Mapped[list["ItemMetadata"]] = relationship(back_populates="item")
     comments: Mapped[list["ItemComments"]] = relationship(back_populates="item")
 
+    __table_args__ = (
+        UniqueConstraint("_network_id", "url", name="uq_network_item"),
+    )
 
 class ItemMetadata(BaseModel):
     __tablename__ = "item_metadata"

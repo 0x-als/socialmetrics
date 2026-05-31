@@ -1,7 +1,6 @@
 import platform
 import subprocess
 import json
-import requests
 import asyncio
 
 from utils import security
@@ -16,7 +15,6 @@ class ScraperInstagramURL:
         self.proxies = []
         self.urls = []
         self.failed_urls = []
-
         self.time_sleep = 20
 
         if platform.system() == "Windows":
@@ -28,8 +26,8 @@ class ScraperInstagramURL:
         logger = logger_config(name="_load_proxies", log_file=self.log_file)
 
         try:
-
             proxies = await init_database.proxies_repo.get_proxies_true()
+
             if not proxies:
                 logger.warning("No work proxies found!")
                 self.proxies = []
@@ -48,16 +46,16 @@ class ScraperInstagramURL:
         logger = logger_config(name="_load_urls", log_file=self.log_file)
 
         try:
-
             urls = await init_database.instagram_repo.get_instagram_accounts()
+
             if not urls:
                 logger.warning("No work urls found!")
                 self.urls = []
                 return
 
             urls_active = [u for u in urls if u.status]
-
             logger.info(f"Active urls loaded: {len(urls_active)}")
+
             self.urls = urls_active
             return self.urls
 
@@ -67,8 +65,8 @@ class ScraperInstagramURL:
     async def _build_proxy(self, data_proxy):
         logger = logger_config(name="_build_proxy", log_file=self.log_file)
         proxy_list = []
-        try:
 
+        try:
             for proxy in data_proxy:
                 proxy_id = proxy.id
                 login = proxy.login
@@ -76,7 +74,10 @@ class ScraperInstagramURL:
                 port = proxy.port
                 password = await security.decrypt(proxy.password_hash)
 
-                proxy_list.append({"id": proxy_id, "proxy": f"http://{login}:{password}@{host}:{port}"})
+                proxy_list.append({
+                    "id": proxy_id,
+                    "proxy": f"http://{login}:{password}@{host}:{port}"
+                })
 
             return proxy_list
 
@@ -84,82 +85,54 @@ class ScraperInstagramURL:
             logger.exception(ex)
 
     async def _find_followers(self, stdout):
-        logger = logger_config(name="_find_followers", log_file=self.log_file)
-
         try:
-            # Если пришёл JSON-строка — парсим
             if isinstance(stdout, str):
                 data = json.loads(stdout)
-            elif isinstance(stdout, dict):
-                data = stdout
             else:
-                logger.warning(f"Unexpected type: {type(stdout)}")
-                return None
+                data = stdout
 
-            # Безопасный спуск по структуре
             if isinstance(data, dict) and "data" in data:
                 user = data["data"].get("user")
-                if user and isinstance(user, dict):
+
+                if user:
                     edge = user.get("edge_followed_by")
-                    if edge and isinstance(edge, dict) and "count" in edge:
+                    if edge and "count" in edge:
                         return edge["count"]
 
-                    # Дополнительные варианты (на всякий случай)
                     if "followers_count" in user:
                         return user["followers_count"]
-                    if "edge_followed_by" in user and isinstance(user["edge_followed_by"], int):
-                        return user["edge_followed_by"]
 
-            logger.warning("Followers count not found in response")
             return None
 
-        except json.JSONDecodeError as ex:
-            logger.error(f"JSON decode error: {ex}")
-        except Exception as ex:
-            logger.exception(ex)
-
-        return None
+        except Exception:
+            return None
 
     async def _find_shortcode(self, stdout):
-        logger = logger_config(name="_find_shortcode", log_file=self.log_file)
-
         try:
             if isinstance(stdout, str):
                 data = json.loads(stdout)
-            elif isinstance(stdout, dict):
-                data = stdout
             else:
-                logger.warning(f"Unexpected type for shortcode search: {type(stdout)}")
-                return []
+                data = stdout
 
             result = []
 
-            def extract_shortcodes(obj):
-                """Рекурсивная функция для поиска всех shortcode"""
+            def extract(obj):
                 if isinstance(obj, dict):
                     if "shortcode" in obj and isinstance(obj["shortcode"], str):
                         result.append(obj["shortcode"])
 
-                    for value in obj.values():
-                        extract_shortcodes(value)
+                    for v in obj.values():
+                        extract(v)
 
                 elif isinstance(obj, list):
                     for item in obj:
-                        extract_shortcodes(item)
+                        extract(item)
 
-            extract_shortcodes(data)
+            extract(data)
+            return list(dict.fromkeys(result))
 
-            unique_shortcodes = list(dict.fromkeys(result))
-
-            logger.info(f"Found {len(unique_shortcodes)} shortcodes")
-            return unique_shortcodes
-
-        except json.JSONDecodeError as ex:
-            logger.error(f"JSON decode error in _find_shortcode: {ex}")
-        except Exception as ex:
-            logger.exception(ex)
-
-        return []
+        except Exception:
+            return []
 
     async def _fetch_webprofile(self, url: str, proxy_string: str = None):
         logger = logger_config(name="_fetch_metadata", log_file=self.log_file)
@@ -188,7 +161,11 @@ class ScraperInstagramURL:
             )
 
             stdout = process.stdout.strip()
-            return stdout
+
+            try:
+                return json.loads(stdout)
+            except:
+                return stdout
 
         except Exception as ex:
             logger.exception(ex)
@@ -200,35 +177,95 @@ class ScraperInstagramURL:
         self.proxies = await self._load_proxies()
         self.proxies = await self._build_proxy(self.proxies)
 
+        storage = []
+
         try:
             if not self.proxies:
                 logger.warning("No work proxies found!")
                 self.failed_urls = list(self.urls)
+
             else:
                 for i, url_object in enumerate(self.urls):
+                    id = url_object.id
                     url = url_object.url
 
-                    current_proxy_data = self.proxies[i % len(self.proxies)]
-                    proxy_string = current_proxy_data["proxy"]
-                    proxy_id = current_proxy_data["id"]
+                    logger.info(f"Processing URL: {url}")
 
-                    try:
+                    success = False
 
-                        result = await self._fetch_webprofile(url=url, proxy_string=proxy_string)
-                        followers = await self._find_followers(result)
-                        shortcode = await self._find_shortcode(result)
-                        print(followers, len(shortcode))
-                        logger.info(f"Sleep {str(self.time_sleep)} seconds")
+                    for proxy_data in self.proxies:
+                        proxy_string = proxy_data["proxy"]
+
+                        logger.info(f"Trying proxy: {proxy_string}")
+
+                        try:
+                            result = await self._fetch_webprofile(url=url, proxy_string=proxy_string)
+
+                            if isinstance(result, dict) and result.get("status") == "fail":
+                                logger.warning(f"Proxy failed for {url}")
+                                continue
+
+                            followers = await self._find_followers(result)
+                            shortcodes = await self._find_shortcode(result)
+
+                            logger.info(f"Followers: {followers}")
+                            logger.info(f"Shortcodes: {len(shortcodes)}")
+                            logger.info(f"Success via proxy: {proxy_string}")
+
+                            storage.append([{
+                                "id": id,
+                                "url": url,
+                                "followers": followers,
+                                "shortcodes": shortcodes
+                            }])
+
+                            success = True
+                            break
+
+                        except Exception as ex:
+                            logger.exception(ex)
+                            continue
+
+                    if not success:
+                        logger.info(f"All proxies failed for {url}, trying main IP")
+
+                        try:
+                            result = await self._fetch_webprofile(url=url, proxy_string=None)
+
+                            if isinstance(result, dict) and result.get("status") == "fail":
+                                logger.warning(f"Main IP failed for {url}")
+                                self.failed_urls.append(url_object)
+                                continue
+
+                            followers = await self._find_followers(result)
+                            shortcodes = await self._find_shortcode(result)
+
+                            logger.info(f"Followers: {followers}")
+                            logger.info(f"Shortcodes: {len(shortcodes)}")
+                            logger.info("Success via main IP")
+
+                            storage.append([{
+                                "id": id,
+                                "url": url,
+                                "followers": followers,
+                                "shortcodes": shortcodes
+                            }])
+
+                        except Exception as ex:
+                            logger.exception(ex)
+                            self.failed_urls.append(url_object)
+                            continue
+
+                    if i != len(self.urls) - 1:
+                        logger.info(f"Sleep {self.time_sleep} seconds")
                         await asyncio.sleep(self.time_sleep)
+                    else:
+                        logger.info("This last object, no pause.")
 
-                    except Exception as ex:
-                        logger.exception(ex)
-
-            if self.failed_urls:
-                logger.info(f"Repeat request for main IP machine.")
-
-                url = url_object.url
-                result = await self._fetch_webprofile(url=url, proxy_string=None)
+            if storage:
+                logger.info("Saving parsed items to database...")
+                await init_database.instagram_repo.save_network_items(storage)
+                logger.info("Saving completed")
 
         except Exception as ex:
             logger.exception(ex)
