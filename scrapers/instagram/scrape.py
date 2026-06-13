@@ -1,11 +1,13 @@
-import platform
-import subprocess
+import os
 import json
 import asyncio
+import platform
+import subprocess
 
 from utils import security
-from utils.logger import logger_config
 from database import init_database
+from datetime import datetime, UTC
+from utils.logger import logger_config
 
 
 class ScraperInstagramURL:
@@ -271,9 +273,268 @@ class ScraperInstagramURL:
             logger.exception(ex)
 
 
+class ScraperInstagramMetadata:
+    def __init__(self):
+        self.log_file = "ScraperInstagramMetadata.log"
+        self.proxies = []
+        self.urls = []
+        self.failed_urls = []
+        self.time_sleep = 20
+        self.batch_size = 200
+
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(os.path.dirname(script_dir))
+
+        self.path_to_metadata_js = os.path.join(project_root, "scrapers", "instagram", "metadata.js")
+        self.metadata_cwd = os.path.dirname(self.path_to_metadata_js)
+
+        logger = logger_config(name="ScraperInstagramMetadata_init", log_file=self.log_file)
+        logger.info(f"Metadata.js full path: {self.path_to_metadata_js}")
+        logger.info(f"Metadata CWD: {self.metadata_cwd}")
+
+    async def _load_proxies(self):
+        logger = logger_config(name="_load_proxies", log_file=self.log_file)
+
+        try:
+            proxies = await init_database.proxies_repo.get_proxies_true()
+
+            if not proxies:
+                logger.warning("No work proxies found!")
+                self.proxies = []
+                return []
+
+            proxies_active = [p for p in proxies if p.status]
+            logger.info(f"Active proxies loaded: {len(proxies_active)}")
+
+            self.proxies = proxies_active
+            return self.proxies
+
+        except Exception as ex:
+            logger.exception(ex)
+            return []
+
+    async def _build_proxy(self, data_proxy):
+        logger = logger_config(name="_build_proxy", log_file=self.log_file)
+        proxy_list = []
+
+        try:
+            if not data_proxy:
+                return []
+
+            for proxy in data_proxy:
+                proxy_id = proxy.id
+                login = proxy.login
+                host = proxy.host
+                port = proxy.port
+                password = await security.decrypt(proxy.password_hash)
+
+                proxy_list.append({
+                    "id": proxy_id,
+                    "proxy": f"http://{login}:{password}@{host}:{port}"
+                })
+
+            return proxy_list
+
+        except Exception as ex:
+            logger.exception(ex)
+            return []
+
+    async def _load_urls(self):
+        logger = logger_config(name="_load_urls", log_file=self.log_file)
+
+        try:
+            urls = await init_database.instagram_repo.get_instagram_items()
+
+            if not urls:
+                logger.warning("No work urls found!")
+                self.urls = []
+                return []
+
+            urls_active = [u for u in urls if u.status]
+            logger.info(f"Active urls loaded: {len(urls_active)}")
+
+            self.urls = urls_active
+            return self.urls
+
+        except Exception as ex:
+            logger.exception(ex)
+            return []
+
+    def _normalize_metadata(self, raw_metadata):
+        if not isinstance(raw_metadata, dict):
+            return {"success": False, "error": "Invalid metadata format"}
+
+        if "error" in raw_metadata:
+            return {"success": False, "error": raw_metadata.get("error")}
+
+        data = raw_metadata
+
+        ts = data.get("taken_at_timestamp")
+
+        published_at = None
+        if ts:
+            try:
+                published_at = datetime.fromtimestamp(int(ts), UTC)
+            except:
+                published_at = None
+
+        normalized = {
+            "likes": data.get("likes") or 0,
+            "video_views_count": data.get("video_view_count") or 0,
+            "video_play_count": data.get("video_play_count") or 0,
+            "caption": data.get("caption"),
+            "published_at": (
+                published_at.strftime("%Y-%m-%d %H:%M:%S")
+                if published_at else None
+            ),
+            "comments_count": data.get("comment_count") or 0,
+            "shares": 0,
+            "saves": 0
+        }
+
+        return normalized
+
+    async def _fetch_metadata(self):
+        logger = logger_config(name="_fetch_metadata", log_file=self.log_file)
+
+        results = []
+
+        try:
+            if not self.urls:
+                logger.warning("No URLs to process")
+                return []
+
+            total_urls = len(self.urls)
+
+            for batch_start in range(0, len(self.urls), self.batch_size):
+                batch = self.urls[batch_start: batch_start + self.batch_size]
+                logger.info(f"Processing batch {batch_start // self.batch_size + 1}")
+
+                for idx, url_obj in enumerate(batch):
+                    url = url_obj.url
+                    logger.info(f"Processing URL: {url}")
+
+                    success = False
+                    data = None
+
+                    for proxy in self.proxies:
+                        proxy_string = proxy["proxy"]
+                        logger.info(f"Trying proxy: {proxy_string}")
+
+                        try:
+                            cmd = ["node", self.path_to_metadata_js, url, proxy_string]
+
+                            process = subprocess.run(
+                                cmd,
+                                capture_output=True,
+                                text=True,
+                                encoding="utf-8",
+                                errors="replace",
+                                cwd=self.metadata_cwd,
+                                timeout=30
+                            )
+
+                            stdout = process.stdout.strip()
+                            stderr = process.stderr.strip()
+
+                            if stderr:
+                                logger.error(f"Node STDERR (proxy): {stderr}")
+
+                            try:
+                                data = json.loads(stdout)
+                            except Exception:
+                                data = {"raw": stdout, "error": "JSON parse failed"}
+
+                            logger.info(f"Response via proxy: {proxy_string}")
+                            success = True
+                            break
+
+                        except Exception as ex:
+                            logger.exception(ex)
+                            continue
+
+                    if not success:
+                        logger.info("Trying main IP")
+
+                        try:
+                            cmd = ["node", self.path_to_metadata_js, url]
+
+                            process = subprocess.run(
+                                cmd,
+                                capture_output=True,
+                                text=True,
+                                encoding="utf-8",
+                                errors="replace",
+                                cwd=self.metadata_cwd,
+                                timeout=30
+                            )
+
+                            stdout = process.stdout.strip()
+                            stderr = process.stderr.strip()
+
+                            if stderr:
+                                logger.error(f"Node STDERR (main IP): {stderr}")
+
+                            try:
+                                data = json.loads(stdout)
+                            except Exception:
+                                data = {"raw": stdout, "error": "JSON parse failed"}
+
+                            logger.info("Response via main IP")
+                            success = True
+
+                        except Exception as ex:
+                            logger.exception(ex)
+                            self.failed_urls.append(url_obj)
+                            continue
+
+                    if success:
+                        normalized_data = self._normalize_metadata(data)
+
+                        results.append({
+                            "network_item_id": url_obj.id,
+                            "url": url,
+                            "metadata": normalized_data
+                        })
+
+                    await asyncio.sleep(0.1)
+
+                    current_global_index = batch_start + idx
+                    if current_global_index < total_urls - 1:
+                        logger.info(f"Sleep {self.time_sleep} seconds")
+                        await asyncio.sleep(self.time_sleep)
+
+                logger.info(f"Batch complete.")
+
+            return results
+
+        except Exception as ex:
+            logger.exception(ex)
+            return []
+
+    async def run(self):
+        logger = logger_config(name="run", log_file=self.log_file)
+
+        try:
+            self.urls = await self._load_urls()
+            raw_proxies = await self._load_proxies()
+            self.proxies = await self._build_proxy(raw_proxies)
+
+            data_metadata = await self._fetch_metadata()
+
+            print(data_metadata)
+            await init_database.item_metadata_repo.save_metadata(data_metadata)
+            await init_database.network_item_repo.update_published_at(data_metadata)
+
+        except Exception as ex:
+            logger.exception(ex)
+
+
 async def main():
     scraper_instagram_url = ScraperInstagramURL()
-    await scraper_instagram_url.run()
+    scraper_instagram_metadata = ScraperInstagramMetadata()
+    # await scraper_instagram_url.run()
+    await scraper_instagram_metadata.run()
 
 
 asyncio.run(main())
