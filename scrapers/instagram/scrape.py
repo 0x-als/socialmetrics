@@ -528,13 +528,3 @@ class ScraperInstagramMetadata:
 
         except Exception as ex:
             logger.exception(ex)
-
-
-async def main():
-    scraper_instagram_url = ScraperInstagramURL()
-    scraper_instagram_metadata = ScraperInstagramMetadata()
-    # await scraper_instagram_url.run()
-    await scraper_instagram_metadata.run()
-
-
-asyncio.run(main())
