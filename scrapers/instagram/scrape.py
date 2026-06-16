@@ -48,7 +48,7 @@ class ScraperInstagramURL:
         logger = logger_config(name="_load_urls", log_file=self.log_file)
 
         try:
-            urls = await init_database.instagram_repo.get_instagram_accounts()
+            urls = await init_database.social_networks_repo.get_social_networks_by_type("instagram")
 
             if not urls:
                 logger.warning("No work urls found!")
@@ -343,7 +343,7 @@ class ScraperInstagramMetadata:
         logger = logger_config(name="_load_urls", log_file=self.log_file)
 
         try:
-            urls = await init_database.instagram_repo.get_instagram_items()
+            urls = await init_database.network_item_repo.get_network_items_by_type("instagram")
 
             if not urls:
                 logger.warning("No work urls found!")
