@@ -76,6 +76,7 @@ class NetworkItems(BaseModel):
     _network_id: Mapped[int] = mapped_column(ForeignKey("social_networks.id"))
     url: Mapped[str] = mapped_column(Text)
     status: Mapped[bool] = mapped_column(Boolean, default=True)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     network: Mapped["SocialNetworks"] = relationship(back_populates="items")
     _metadata: Mapped[list["ItemMetadata"]] = relationship(back_populates="item")
@@ -84,6 +85,7 @@ class NetworkItems(BaseModel):
     __table_args__ = (
         UniqueConstraint("_network_id", "url", name="uq_network_item"),
     )
+
 
 class ItemMetadata(BaseModel):
     __tablename__ = "item_metadata"

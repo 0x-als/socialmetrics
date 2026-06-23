@@ -24,7 +24,7 @@ async def get_social_networks(request: Request):
         session = await init_database.session_repo.get_session_by_token(token)
         user_id = session._user_id
 
-        networks = await init_database.social_networks_repo.get_social_networks(user_id=user_id)
+        networks = await init_database.social_networks_repo.get_social_networks_by_user_id(user_id=user_id)
 
         return JSONResponse({
             "status": True,

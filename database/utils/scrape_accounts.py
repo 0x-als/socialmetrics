@@ -1,10 +1,8 @@
-from config import *
-from utils import security
 from database.models import *
 from sqlalchemy import *
 from utils.logger import logger_config
 from database.session import get_session
-from sqlalchemy.ext.asyncio import create_async_engine
+
 
 class ScrapeAccountsRepo:
     def __init__(self):
@@ -20,6 +18,25 @@ class ScrapeAccountsRepo:
                 try:
 
                     query = select(ScrapeAccounts)
+                    result = await session.execute(query)
+                    return result.scalars().all()
+
+                except Exception as ex:
+                    logger.exception(ex)
+                    return False
+
+        except Exception as ex:
+            logger.exception(ex)
+            return False
+
+    async def get_scrape_account_by_type(self, type):
+        logger = logger_config(name="get_scrape_account_by_type", log_file=self.log_file)
+        try:
+
+            async with get_session() as session:
+                try:
+
+                    query = select(ScrapeAccounts).where(ScrapeAccounts.type == type)
                     result = await session.execute(query)
                     return result.scalars().all()
 

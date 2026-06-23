@@ -1,3 +1,4 @@
+import asyncio
 import os
 import json
 import base64
@@ -124,7 +125,7 @@ class AuthorizationVkontakte:
     async def save_profile(self, context, folder_name: str):
         logger = logger_config(name="save_profile", log_file=self.log_file)
         try:
-            profile_dir = os.path.join(base_dir, "files", "vk_profiles", folder_name)
+            profile_dir = os.path.join(base_dir, "files", "profiles", "vk_profiles", folder_name)
             os.makedirs(profile_dir, exist_ok=True)
             cookies = await context.cookies()
             with open(os.path.join(profile_dir, "cookies.json"), "w", encoding="UTF-8") as f:
@@ -139,7 +140,6 @@ class AuthorizationVkontakte:
 
 
 class GetTokenVkontakte:
-
     """
     Before parsing starts, it will go through all the sessions and update the tokens.
     """
@@ -157,10 +157,10 @@ class GetTokenVkontakte:
                 browser = await playwright.chromium.launch(
                     headless=False,
                 )
-                with open(f"{base_dir}/files/vk_profiles/{path}/cookies.json", "r", encoding="UTF-8") as f:
+                with open(f"{base_dir}/files/profiles/vk_profiles/{path}/cookies.json", "r", encoding="UTF-8") as f:
                     cookies = json.load(f)
 
-                with open(f"{base_dir}/files/vk_profiles/{path}/storage.json", "r", encoding="UTF-8") as f:
+                with open(f"{base_dir}/files/profiles/vk_profiles/{path}/storage.json", "r", encoding="UTF-8") as f:
                     storage = json.load(f)
 
                 context = await browser.new_context(storage_state=storage)

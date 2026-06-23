@@ -11,7 +11,7 @@ class AuthorizationTelegram(TelegramClient):
         self.phone = phone
         self.log_file = "AuthorizationTelegram.log"
 
-        session_dir = f"{base_dir}/files/telegram_profile"
+        session_dir = f"{base_dir}/files/profiles/telegram_profile"
         os.makedirs(session_dir, exist_ok=True)
 
         session_path = f"{session_dir}/{phone}"

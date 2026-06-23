@@ -1,3 +1,5 @@
+from database.utils.metadata import *
+from database.utils.network_items import *
 from database.utils.scrape_accounts import *
 from database.utils.session import *
 from database.utils.users import *
@@ -9,6 +11,7 @@ from database.utils.instagram import *
 from database.utils.youtube import *
 from database.utils.social_network import *
 from database.utils.settings import *
+from database.utils.tiktok import *
 
 
 class INITDatabase:
@@ -24,6 +27,9 @@ class INITDatabase:
         self.telegram_repo = TelegramRepo()
         self.proxies_repo = ProxiesRepo()
         self.instagram_repo = InstagramRepo()
+        self.item_metadata_repo = ItemMetadataRepo()
+        self.network_item_repo = NetworkItemsRepo()
+        self.tiktok_repo = TikTokRepo()
 
 
 init_database = INITDatabase()

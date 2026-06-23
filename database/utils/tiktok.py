@@ -1,18 +1,14 @@
-from sqlalchemy.orm import selectinload
-
-from config import *
-from utils import security
-from database.models import *
 from sqlalchemy import *
+from database.models import *
 from utils.logger import logger_config
+from sqlalchemy.orm import selectinload
 from database.session import get_session
-from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.dialects.postgresql import insert
 
 
-class InstagramRepo:
+class TikTokRepo:
     def __init__(self):
-        self.log_file = "InstagramRepo.log"
+        self.log_file = "TikTokRepo.log"
 
     async def save_network_items(self, data):
         logger = logger_config(name="save_network_items", log_file=self.log_file)
@@ -26,12 +22,12 @@ class InstagramRepo:
                         row = item[0]
 
                         network_id = row["id"]
-                        shortcodes = row["shortcodes"]
+                        urls = row["urls"]
 
-                        for shortcode in shortcodes:
+                        for url in urls:
                             objects.append({
                                 "_network_id": network_id,
-                                "url": f"https://www.instagram.com/p/{shortcode}/",
+                                "url": url,
                                 "status": True
                             })
 
